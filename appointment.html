@@ -218,7 +218,7 @@
           doctors.data.forEach((doctor) => {
             const option = document.createElement("option");
             option.value = doctor._id; // Assuming API returns an 'id' field
-            option.textContent = `Dr. ${doctor.firstname} ${doctor.lastname}`; // Assuming API returns a 'name' field
+            option.textContent = `Dr. ${doctor.userId.firstname} ${doctor.userId.lastname}`; // Assuming API returns a 'name' field
             doctorSelect.appendChild(option);
           });
 
@@ -226,7 +226,7 @@
           const departmentSelect = document.getElementById("departmentId");
           departments.data.forEach((department) => {
             const option = document.createElement("option");
-            option.value = department.id; // Assuming API returns an 'id' field
+            option.value = department._id; // Assuming API returns an 'id' field
             option.textContent = department.name; // Assuming API returns a 'name' field
             departmentSelect.appendChild(option);
           });
@@ -255,11 +255,34 @@
             notes: document.getElementById("notes").value,
           };
 
-          // Log the captured values to the console
-          console.log(appointmentData);
-
-          // You can add additional code to send this data to your backend API
-          alert("Appointment data has been logged to the console.");
+          fetch("http://localhost:5000/api/save/Saveappointment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              firstName: appointmentData.firstname,
+              lastName: appointmentData.lastname,
+              email: appointmentData.email,
+              contactNo: appointmentData.contactNo,
+              dateOfAppointment: appointmentData.appointmentDate,
+              departmentId: appointmentData.departmentId,
+              docterId: appointmentData.doctorId,
+              notes: appointmentData.notes,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.code === "Success") {
+                alert("Appointment Sheduled succefully!");
+              } else {
+                alert(data.message || "Invalid login credentials.");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("An error occurred. Please try again.");
+            });
         });
     </script>
   </body>

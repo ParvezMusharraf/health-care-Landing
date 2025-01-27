@@ -122,10 +122,6 @@
           const emailValue = email.value;
           const passwordValue = password.value;
 
-          console.log("Login Form Submitted:");
-          console.log("Email:", emailValue);
-          console.log("Password:", passwordValue);
-
           // Perform an API call
           fetch("http://localhost:5000/api/user/login", {
             method: "POST",
