@@ -157,11 +157,13 @@
           <table class="table table-striped">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Reason</th>
-                <th>Actions</th>
+                <th>Patient Name</th>
+                <th>Email</th>
+                <th>Contact No</th>
+                <th>Appointment Date</th>
+                <th>Department</th>
+                <th>Doctor</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody id="appointmentTableBody">
@@ -203,17 +205,24 @@
           window.location.href = "index.html"; // Update with your login page URL
         }
         try {
-          const [doctorResponse, departmentResponse] = await Promise.all([
-            fetch("http://localhost:5000/api/get/AllDocters", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch("http://localhost:5000/api/get/AllDepartment", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
+          const [doctorResponse, departmentResponse, appointmentResponce] =
+            await Promise.all([
+              fetch("http://localhost:5000/api/get/AllDocters", {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              fetch("http://localhost:5000/api/get/AllDepartment", {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              fetch("http://localhost:5000/api/get/AllAppointment", {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ]);
 
           const doctors = await doctorResponse.json();
           const departments = await departmentResponse.json();
+          const appointment = await appointmentResponce.json();
+
+          populateAppointmentTable(appointment.data);
           const doctorSelect = document.getElementById("doctorId");
           doctors.data.forEach((doctor) => {
             const option = document.createElement("option");
@@ -243,6 +252,7 @@
         .addEventListener("submit", (event) => {
           event.preventDefault();
 
+          const token = localStorage.getItem("authToken");
           // Capture form values
           const appointmentData = {
             firstname: document.getElementById("firstname").value,
@@ -259,6 +269,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               firstName: appointmentData.firstname,
@@ -272,9 +283,21 @@
             }),
           })
             .then((response) => response.json())
-            .then((data) => {
+            .then(async (data) => {
               if (data.code === "Success") {
                 alert("Appointment Sheduled succefully!");
+                try {
+                  const appointmentResponse = await fetch(
+                    "http://localhost:5000/api/get/AllAppointment",
+                    {
+                      headers: { Authorization: `Bearer ${token}` },
+                    }
+                  );
+                  const appointments = await appointmentResponse.json();
+                  populateAppointmentTable(appointments.data);
+                } catch (error) {
+                  console.error("Error fetching updated appointments:", error);
+                }
               } else {
                 alert(data.message || "Invalid login credentials.");
               }
@@ -284,6 +307,37 @@
               alert("An error occurred. Please try again.");
             });
         });
+
+      function populateAppointmentTable(appointments) {
+        console.log(appointments, "app");
+        const tableBody = document.getElementById("appointmentTableBody");
+        tableBody.innerHTML = ""; // Clear existing rows
+
+        appointments.forEach((appointment) => {
+          const row = document.createElement("tr");
+
+          const appointmentDate = new Date(appointment.appointmentDate);
+          const formattedDate = appointmentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+          const formattedTime = appointmentDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }); // HH:MM AM/PM
+
+          row.innerHTML = `
+        <td>${appointment.firstname} ${appointment.lastname}</td>
+        <td>${appointment.email}</td>
+        <td>${appointment.contactNo}</td>
+        <td>${appointmentDate}</td>
+        <td>${appointment.departmentId?.name || "N/A"}</td>
+        <td>${appointment.doctorId?.userId.firstname || "N/A"} ${
+            appointment.doctorId?.userId.lastname || ""
+          }</td>
+        <td>${appointment.notes || "No notes"}</td>
+      `;
+
+          tableBody.appendChild(row);
+        });
+      }
     </script>
   </body>
 </html>
